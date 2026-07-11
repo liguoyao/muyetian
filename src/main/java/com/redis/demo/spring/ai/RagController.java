@@ -3,6 +3,9 @@ package com.redis.demo.spring.ai;
 import java.util.List;
 import java.util.UUID;
 
+import com.alibaba.fastjson.JSONObject;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,14 +24,38 @@ public class RagController {
     private static final Logger log = LoggerFactory.getLogger(RagController.class);
     private final RagService ragService;
     private final StringRedisTemplate stringRedisTemplate;
+    private final ObservationRegistry registry;
 
-    @Resource
+    @Resource(name = "myMongoTemplate")
     private MongoTemplate mongoTemplate;
 
-	public RagController(RagService ragService, StringRedisTemplate stringRedisTemplate) {
+	public RagController(RagService ragService, StringRedisTemplate stringRedisTemplate, ObservationRegistry registry) {
 		this.ragService = ragService;
         this.stringRedisTemplate = stringRedisTemplate;
+        this.registry = registry;
 	}
+
+    @GetMapping("/mongo")
+    public String mongo() {
+        Observation.createNotStarted(
+                        "mongo-module",
+                        registry
+                )
+                .lowCardinalityKeyValue(
+                        "module",
+                        "mongo"
+                )
+                .observe(() -> {
+                    JSONObject jsonObject = new JSONObject();
+                    long millis = System.currentTimeMillis();
+                    jsonObject.put("key1" + millis, "value1" + millis);
+                    jsonObject.put("key2" + millis, "value2" + millis);
+                    mongoTemplate.save(jsonObject, "col_first");
+                    List<Object> colFirst = mongoTemplate.findAll(Object.class, "col_first");
+                    System.err.println(colFirst);
+                });
+        return "";
+    }
 
     @Scheduled(fixedDelay = 3000)
     public void redisTask() {

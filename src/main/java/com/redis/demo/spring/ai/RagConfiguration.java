@@ -17,11 +17,19 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import org.springframework.data.mongodb.MongoDatabaseFactory;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
 import redis.clients.jedis.Connection;
 import redis.clients.jedis.util.Pool;
 
 @Configuration
 public class RagConfiguration {
+
+    @Bean(name = "myMongoTemplate")
+    MongoTemplate mongoTemplate(MongoDatabaseFactory factory, MappingMongoConverter converter) {
+        return new MongoTemplate(factory, converter);
+    }
 
     @Bean
     OpenAiEmbeddingClient openAiEmbeddingClient() {
